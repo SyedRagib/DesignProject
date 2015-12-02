@@ -1,0 +1,19 @@
+Compilation:
+To compile the program
+premake4 gmake
+make
+
+This program was compiled and tested on the machine: gl06.student.cs
+
+Manual:
+In the assignment is wasn't clear if the preset colours should be also reset after hitting R, I have made the assumption that is the desired effect.
+
+I wasn't sure how the rotation was done so I have rotated the grid on the y axis while keeping the grid pointed at the centre.
+
+In the assignment I was unclear about the placement of the cursor/active cell. I assumed that the active cell must be drawn on the grid on top of all the cubes because of the sentence: "The indicator is drawn on top of all other scene geometry"
+
+The assignment wasn't clear on what a "reasonable" amount of rotation should be so I tuned the rotation so that if a user would to drag the mouse from left to right (or vice versa) on the window, it would rotate the grid approximately once.
+
+The assignment wasn't clear if we should differentiate between dragging on the colour box or dragging for rotation.
+
+The assignment didn't specify if we needed to rename the winow name to "Assignment 1", so I have left it alone.

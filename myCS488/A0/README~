@@ -1,0 +1,9 @@
+Compilation:
+To compile the program:
+premake4 gmake
+make
+
+This program was compiled on the lab computer named: gl07.student.cs
+
+Manual:
+I have added extra sliders, but the assignment did not specift where so I have placed them underneathe the red slider.
