@@ -111,6 +111,28 @@ Intersection NonhierSphere::checkIntersection(Ray r, bool skipBound)
 
 	if(numRoots == 2)
 	{
+		/*
+		double temp;
+		if(roots[0] > roots[1])
+		{
+			temp = roots[0];
+			roots[0] = roots[1];
+			roots[1] = temp;
+		}
+
+		if(roots[0] > 1e-2)
+		{
+			distance = roots[0];
+			i.hit = true;
+		}
+		else if (roots[1] > 1e-2)
+		{
+			distance = roots[1];
+			i.hit = true;
+		}
+		*/
+		
+		
 		double temp;
 		if(roots[0] < roots[1])
 			temp = roots[0];
@@ -119,9 +141,11 @@ Intersection NonhierSphere::checkIntersection(Ray r, bool skipBound)
 
 		if(temp > 1e-10)
 		{
-			distance = roots[1];
+			distance = temp;//roots[1];
 			i.hit = true;
 		}
+		
+		
 	}
 	else if (roots[0] > 1e-10)
 	{

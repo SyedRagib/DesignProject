@@ -19,5 +19,10 @@ void a4_render(
 
 	// Lighting parameters
 	const glm::vec3& ambient,
-	const std::list<Light*>& lights
+	const std::list<Light*>& lights,
+
+	//Antialiasing parameters
+	int aaMode, int partition,
+	//Concurrency
+	int threadCount
 );

@@ -407,7 +407,21 @@ int gr_render_cmd(lua_State* L)
 
   luaL_checktype(L, 10, LUA_TTABLE);
   int light_count = lua_rawlen(L, 10);
-  
+
+  int aaMode = luaL_checknumber(L, 11);
+  int partition = luaL_checknumber(L, 12);
+  int threadCount = luaL_checknumber(L, 13);
+
+  //Error checking
+  if(threadCount <= 0)
+    threadCount = 1;
+
+  if(partition < 2)
+    partition = 2;
+
+  if(aaMode < 0 || aaMode > 2)
+    aaMode = 0;
+
   luaL_argcheck(L, light_count >= 1, 10, "Tuple of lights expected");
   std::list<Light*> lights;
   for (int i = 1; i <= light_count; i++) {
@@ -420,7 +434,7 @@ int gr_render_cmd(lua_State* L)
   }
 
   Image im( width, height, 3 );
-  a4_render( root->node, im, eye, view, up, fov, ambient, lights);
+  a4_render( root->node, im, eye, view, up, fov, ambient, lights, aaMode, partition, threadCount);
   im.savePng( filename );
   
   return 0;

@@ -1,5 +1,5 @@
 #include "SceneNode.hpp"
-
+#include "PhongMaterial.hpp"
 #include "cs488-framework/MathUtils.hpp"
 
 #include <iostream>
@@ -158,5 +158,6 @@ Intersection SceneNode::checkIntersection(Ray r)
 	glm::mat3 trimmedInvtrans(invtrans);
 	glm::vec3 newNormal = glm::transpose(trimmedInvtrans)*glm::vec3(i.normal.x,i.normal.y,i.normal.z);
 	i.normal = glm::normalize(glm::vec4(newNormal, 0.0f));
+
 	return i;
 }
