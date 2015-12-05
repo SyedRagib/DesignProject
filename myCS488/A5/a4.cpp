@@ -141,7 +141,7 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
   }
 
   colour = computeColour(ray, i, lights, ambient, root);
-  //Calculate reflection colour
+  
   Material *m = i.material;
 
   glm::vec3 rayDirection = glm::vec3(ray.rayDirection.x, ray.rayDirection.y, ray.rayDirection.z);
@@ -150,12 +150,11 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
   //Calculate the fresnel coefficient
   double fresnelCoefficient = 1.0f;// computeFrenselCoefficient(rayDirection, environment, m->getRefractivity(), surfaceNormal);
   
-  //PhongMaterial *pm =(PhongMaterial *)m;
   double matReflection = m->getReflectivity(); // pm->m_reflectioness;
   float matRI = m->getRefractivity(); // pm->m_refractiveIndex;
   glm::vec3 diffuse = m->getColour(glm::vec3(i.point.x, i.point.y, i.point.z));
   
-  
+  //Calculate reflection colour
   if(matReflection > 0.0f && fresnelCoefficient > 0.0f)
   {
     glm::vec3 reflectDirection = rayDirection - surfaceNormal*2.0f*glm::dot(rayDirection,surfaceNormal);
@@ -173,7 +172,7 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
     }  
   }
 
-  //This will never get called
+  //Calculate the refraction colour
   if(false && matRI > 0.0 && checkTotalInternalReflection(environment, matRI, rayDirection, surfaceNormal))
   {
     glm::vec3 refractionDirection = glm::refract(rayDirection, surfaceNormal, environment/matRI);
