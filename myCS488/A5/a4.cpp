@@ -9,6 +9,7 @@
 #include <math.h>
 #include <iomanip>
 #include <thread>
+#include <chrono>
 
 const float PI = 3.14159265f;
 const int checkerBoardSize = 30;
@@ -432,6 +433,7 @@ void a4_render(
 
   int threadSize = threadCount;
   std::thread threads[threadSize];
+  std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
   for(int i=0; i<threadSize; i++)
   {
     threads[i] = std::thread(runRayTraceThread, w,h,fovRadians, aspectRatio, nSide, nUp, nView, eye, root, lights, ambient);
@@ -439,13 +441,13 @@ void a4_render(
 
   for(int i=0; i<threadSize; i++)
     threads[i].join();
-    
+  std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+  
   image = schedule.rayCastedImage;
-    
-  //std::cout << std::fixed << std::setprecision(1) << 100.0f*double(y)/double(h) << " completed ..." << std::endl;
-  //std::cout << "finished " << y << " out of " << h << std::endl;
-  //std::cout << "finished " << h << " out of " << h << std::endl;
-  //std::cout << std::fixed << std::setprecision(1) << 100.0f << " completed ..." << std::endl;
-  //std::cout << largest_value << std::endl;
+  
+  //How long did this operation take
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+  int seconds = duration/1000000;
+  std::cout << "This ray casted image took " << seconds << " seconds (" << duration << " microseconds)" << std::endl;
 }
 

@@ -1,5 +1,6 @@
 #include "Scheduler.hpp"
 #include <iostream>
+#include <iomanip>
 
 Scheduler::Scheduler()
 {
@@ -26,6 +27,14 @@ void Scheduler::updatePixel(int x, int y, glm::vec3 c)
 	rayCastedImage(x,y, 0) = c.x;
 	rayCastedImage(x,y, 1) = c.y;
 	rayCastedImage(x,y, 2) = c.z;
+
+	mtx.lock();
+		if(y == (height -1))
+		{
+			progress++;
+			std::cout << std::fixed << std::setprecision(1) << 100.0f*double(progress)/double(width) << " completed ..." << std::endl;
+		}
+	mtx.unlock();
 }
 
 glm::vec2 Scheduler::getNextScheduleHelper()
@@ -43,7 +52,7 @@ glm::vec2 Scheduler::getNextScheduleHelper()
 glm::vec2 Scheduler::getNextSchedule()
 {
 	mtx.lock();
-	glm::vec2 rv = getNextScheduleHelper();
+		glm::vec2 rv = getNextScheduleHelper();
 	mtx.unlock();
 	return rv;
 	

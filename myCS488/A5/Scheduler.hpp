@@ -19,7 +19,7 @@ class Scheduler
 {
 private:
 	std::mutex mtx; 
-	
+	int progress;
 	int width;
 	int height;
 public:
