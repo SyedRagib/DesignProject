@@ -254,14 +254,13 @@ int gr_cylinder_cmd(lua_State* L)
   data->node = 0;
 
   const char* name = luaL_checkstring(L, 1);
-  glm::vec3 pos,top,bottom;
-  get_tuple(L, 2, &pos[0], 3);
-  get_tuple(L, 3, &top[0], 3);
-  get_tuple(L, 4, &bottom[0], 3);
+  glm::vec3 bottom;
+  get_tuple(L, 2, &bottom[0], 3);
 
-  double radius = luaL_checknumber(L, 5);
+  double height = luaL_checknumber(L, 3);
+  double radius = luaL_checknumber(L, 4);
   
-  data->node = new GeometryNode(name, new Cylinder(pos, top, bottom, radius));
+  data->node = new GeometryNode(name, new Cylinder(bottom, height, radius));
 
   luaL_getmetatable(L, "gr.node");
   lua_setmetatable(L, -2);
@@ -283,10 +282,10 @@ int gr_cone_cmd(lua_State* L)
   get_tuple(L, 2, &pos[0], 3);
   get_tuple(L, 3, &up[0], 3);
 
-  double alpha = luaL_checknumber(L, 4);
+  double radius = luaL_checknumber(L, 4);
   double height = luaL_checknumber(L, 5);
   
-  data->node = new GeometryNode(name, new Cone(pos, up, alpha, height));
+  data->node = new GeometryNode(name, new Cone(pos, up, radius, height));
 
   luaL_getmetatable(L, "gr.node");
   lua_setmetatable(L, -2);

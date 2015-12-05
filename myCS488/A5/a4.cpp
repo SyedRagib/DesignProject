@@ -4,7 +4,6 @@
 #include "extra.hpp"
 #include "PhongMaterial.hpp"
 #include "Texture.hpp"
-#include "PerlinNoise.hpp"
 #include "Scheduler.hpp"
 #include "ImprovedPerlinNoise.hpp"
 #include <math.h>
@@ -14,7 +13,7 @@
 const float PI = 3.14159265f;
 const int checkerBoardSize = 30;
 const int maxDepth = 2;
-const float reflectionEpsilon = 0.0001f;
+const float boostEpsilon = 0.0001f;
 int antiAliasingMode = 0;
 int partitionValue = 2;
 static Scheduler schedule;
@@ -22,25 +21,21 @@ static Scheduler schedule;
 glm::vec3 generateBackground(size_t x, size_t y)
 {
   int value = int(x)/checkerBoardSize + int(y)/checkerBoardSize;
-  return glm::vec3(1.0f,0.0f,0.0f);
-
+  
   if(value % 2 == 0)
     return glm::vec3(0.0f);
   else
     return glm::vec3(1.0f);
 }
 
-float computeFrenselCoefficient(glm::vec3 direction, float environmentFrom, float environmentTo, glm::vec3 outDirection, bool totalInternalRefraction)
+float computeFrenselCoefficient(glm::vec3 direction, float environmentFrom, float environmentTo, glm::vec3 outDirection)
 {
-  //Gotta change this
   float cosThetaS = glm::dot(direction, -1.0f*outDirection);
   float densityRatio = environmentFrom/environmentTo;
   float costThetaTSquared = 1.0f-densityRatio*densityRatio*(1.0f - cosThetaS*cosThetaS); 
   if(costThetaTSquared < 0.0f)
-  {
-    totalInternalRefraction = true;
     return 0.0f;
-  }
+  
 
   //Calculate the frensel coefficient using Frensel's method
   float cosThetaT = sqrtf(costThetaTSquared);
@@ -115,7 +110,6 @@ bool checkTotalInternalReflection(float originalRefractionIndex, float newRefrac
   return ( (1.0f - cl * cl * (1.0f - theta * theta)) < 0.0f);
 }
 
-//https://www.cs.unc.edu/~rademach/xroads-RT/RTarticle.html
 glm::vec3 computeRefractedRayDirection(float originalRefractionIndex, float newRefractionIndex, glm::vec3 rayDirection, glm::vec3 surfaceNormal)
 {
   float n = originalRefractionIndex/newRefractionIndex;
@@ -139,7 +133,7 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
   if(!i.hit)
   {
     //If this ray is the primary ray (ray coming from the eye) then generate the background colour
-    //if(primaryRay)
+    if(primaryRay)
       colour = generateBackground(x,y);
 
     return colour;
@@ -151,16 +145,9 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
 
   glm::vec3 rayDirection = glm::vec3(ray.rayDirection.x, ray.rayDirection.y, ray.rayDirection.z);
   glm::vec3 surfaceNormal = m->getNormal(glm::vec3(i.point.x, i.point.y, i.point.z) ,glm::vec3(i.normal.x, i.normal.y, i.normal.z));
-  glm::vec3 outSurfaceNormal = surfaceNormal;
-  float viewP = glm::dot(rayDirection,surfaceNormal); 
   
-  //We're inside the object
-  if(viewP > 0.0f)
-    outSurfaceNormal *= -1.0f;
-
   //Calculate the fresnel coefficient
-  bool totalInternalRefraction = false;
-  double fresnelCoefficient = 1.0;// computeFrenselCoefficient(rayDirection, environment, m->getRefractivity(), outSurfaceNormal, totalInternalRefraction);
+  double fresnelCoefficient = 1.0f;// computeFrenselCoefficient(rayDirection, environment, m->getRefractivity(), surfaceNormal);
   
   //PhongMaterial *pm =(PhongMaterial *)m;
   double matReflection = m->getReflectivity(); // pm->m_reflectioness;
@@ -168,18 +155,34 @@ Colour rayTracerHelper(Ray &ray, int recursionDepth, bool primaryRay, float refl
   glm::vec3 diffuse = m->getColour(glm::vec3(i.point.x, i.point.y, i.point.z));
   
   
-  if(matReflection > 0.0f && reflection > reflectionEpsilon)
+  if(matReflection > 0.0f && fresnelCoefficient > 0.0f)
   {
-    glm::vec3 reflectDirection = rayDirection - outSurfaceNormal*2.0f*glm::dot(rayDirection,outSurfaceNormal);
-    glm::vec3 reflectOrigin = glm::vec3(i.point.x,i.point.y,i.point.z) + reflectDirection*reflectionEpsilon;  //Give it a little boost
+    glm::vec3 reflectDirection = rayDirection - surfaceNormal*2.0f*glm::dot(rayDirection,surfaceNormal);
+    glm::vec3 reflectOrigin = glm::vec3(i.point.x,i.point.y,i.point.z) + reflectDirection*boostEpsilon;  //Give it a little boost
     Ray reflectedRay;
     reflectedRay.rayDirection = glm::vec4(reflectDirection.x,reflectDirection.y, reflectDirection.z, 0.0f);
     reflectedRay.rayPosition = glm::vec4(reflectOrigin.x,reflectOrigin.y,reflectOrigin.z, 1.0f);
     Intersection reflectedIntersection;
-    Colour reflectedColour = rayTracerHelper(reflectedRay, recursionDepth+1, false, reflection*matReflection, matRI, reflectedIntersection, root, x,y, lights, ambient);
-    
-    reflectedColour *= reflection*matReflection*float(fresnelCoefficient);
-    colour += glm::vec3(reflectedColour.x*diffuse.x, reflectedColour.y*diffuse.y, reflectedColour.z*diffuse.z);
+    Colour reflectedColour = rayTracerHelper(reflectedRay, recursionDepth+1, false, matReflection, matRI, reflectedIntersection, root, x,y, lights, ambient);
+  
+    if(reflectedIntersection.hit)
+    {
+      reflectedColour *= float(fresnelCoefficient)*matReflection;
+      colour += glm::vec3(reflectedColour.x*diffuse.x, reflectedColour.y*diffuse.y, reflectedColour.z*diffuse.z);    
+    }  
+  }
+
+  //This will never get called
+  if(false && matRI > 0.0 && checkTotalInternalReflection(environment, matRI, rayDirection, surfaceNormal))
+  {
+    glm::vec3 refractionDirection = glm::refract(rayDirection, surfaceNormal, environment/matRI);
+    glm::vec3 refractOrigin = glm::vec3(i.point.x,i.point.y,i.point.z)+refractionDirection*boostEpsilon;
+    Ray refractedRay;
+    refractedRay.rayDirection = glm::vec4(refractionDirection, 0.0f);
+    refractedRay.rayPosition = glm::vec4(refractOrigin, 1.0f);
+    Intersection refractedIntersection;
+    Colour refractedColour = rayTracerHelper(refractedRay, recursionDepth+1, false, matReflection, matRI, refractedIntersection, root, x,y, lights, ambient);
+    colour += refractedColour*float(1.0-fresnelCoefficient);
   }
   return colour;
 }
@@ -210,7 +213,7 @@ float getRandomFloat()
 {
   float low = 0.0, high = 1.0;
   float r = low + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/high-low);
-  return r;//-0.5f; 
+  return r;
 }
 
 void generateSamplePoints()
@@ -426,69 +429,18 @@ void a4_render(
 
   if(antiAliasingMode == 1)
     generateSamplePoints();
-  //return;
 
-  /*
-  ImprovedPerlinNoise imp;
-  for (size_t y = 0; y < h; y++) {
-      for (size_t x = 0; x < w; x++) {
-          double m_scale = 0.5;
-          double i = x * m_scale;
-          double j = y * m_scale;
-         double noiseCoef = 0;
-
-         double alpha = 0.05;
-         for (int level = 1; level < 10; level++) {
-            noiseCoef +=  (1.0f / level) * fabsf(imp.noise(
-               level * alpha * i,
-               level *  (alpha+0.10) * j,
-               0
-            ));
-         }
-
-        image(x,y,0) = image(x,y,1)= image(x,y,2) = noiseCoef;
-      }
-    }
-    */
-  bool multiThread = true;
-  
-  if(multiThread)
+  int threadSize = threadCount;
+  std::thread threads[threadSize];
+  for(int i=0; i<threadSize; i++)
   {
-    int threadSize = threadCount;
-    std::thread threads[threadSize];
-    for(int i=0; i<threadSize; i++)
-    {
-      threads[i] = std::thread(runRayTraceThread, w,h,fovRadians, aspectRatio, nSide, nUp, nView, eye, root, lights, ambient);
-    }
+    threads[i] = std::thread(runRayTraceThread, w,h,fovRadians, aspectRatio, nSide, nUp, nView, eye, root, lights, ambient);
+  }
 
-    for(int i=0; i<threadSize; i++)
-      threads[i].join();
+  for(int i=0; i<threadSize; i++)
+    threads[i].join();
     
-    image = schedule.rayCastedImage;
-  }
-  else
-  {
-    for (size_t y = 0; y < h; ++y) {
-      for (size_t x = 0; x < w; ++x) {
-        //Calculate the direction that the ray is firing towards
-        glm::vec3 dir = nView + 
-                        (x / (double(w)) * 2 - 1) * tan(fovRadians) * aspectRatio * nSide + 
-                        (y / (double(h)) * 2 - 1) * tan(fovRadians) * -1 * nUp;
-        glm::vec3 nDir = glm::normalize(dir);
-        Ray r;
-        r.rayDirection = glm::vec4(nDir.x,nDir.y,nDir.z,0);
-        r.rayPosition = glm::vec4(eye.x,eye.y,eye.z,1);
-        
-
-        Intersection i;
-        Colour colour = rayTracerHelper(r, 0, true, 1.0f, 1.0f, i, root, x, y, lights, ambient);
-        
-        image(x,y,0) = colour.x;
-        image(x,y,1) = colour.y;
-        image(x,y,2) = colour.z;
-      }
-    }
-  }
+  image = schedule.rayCastedImage;
     
   //std::cout << std::fixed << std::setprecision(1) << 100.0f*double(y)/double(h) << " completed ..." << std::endl;
   //std::cout << "finished " << y << " out of " << h << std::endl;

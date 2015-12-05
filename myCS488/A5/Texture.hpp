@@ -31,9 +31,9 @@ public:
   double m_refractiveIndex;
 
 private:
-  glm::vec3 getPerlinMarbleColour(glm::vec3 point);
-  glm::vec3 getPerlinWoodColour(glm::vec3 point);
-  glm::vec3 getCheckerBoardColour(glm::vec3 point);
+  double getPerlinMarbleColour(glm::vec3 point);
+  double getPerlinWoodColour(glm::vec3 point);
+  double getCheckerBoardColour(glm::vec3 point);
   
 
   TextureType textureType;

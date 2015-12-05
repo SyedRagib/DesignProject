@@ -69,7 +69,6 @@ OBJECTS := \
 	$(OBJDIR)/Light.o \
 	$(OBJDIR)/Mesh.o \
 	$(OBJDIR)/a4.o \
-	$(OBJDIR)/PerlinNoise.o \
 	$(OBJDIR)/JointNode.o \
 	$(OBJDIR)/Scheduler.o \
 	$(OBJDIR)/PhongMaterial.o \
@@ -155,9 +154,6 @@ $(OBJDIR)/Mesh.o: ../Mesh.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/a4.o: ../a4.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/PerlinNoise.o: ../PerlinNoise.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/JointNode.o: ../JointNode.cpp

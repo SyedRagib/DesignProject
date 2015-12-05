@@ -182,60 +182,33 @@ Intersection Cylinder::checkIntersection(Ray r, bool skipBound)
 	glm::vec3 u = rayDirection - m_upAxis*glm::dot(rayDirection, m_upAxis);
 	glm::vec3 v = bottomToOrigin - m_upAxis*glm::dot(bottomToOrigin, m_upAxis);
 
+
 	double a = glm::dot(u,u);
-	if(fabs(a) > minValue)
+	double b = 2*glm::dot(u,v);
+	double c = glm::dot(v,v)  - m_radius*m_radius;
+	double roots[2];
+	int numRoots = quadraticRoots(a,b,c,roots);
+	for(int index=0; index<numRoots; index++)
 	{
-		double b = 2*glm::dot(u,v);
-		double c = glm::dot(v,v)  - m_radius*m_radius;
+		glm::vec3 cylinderPoint = rayOrigin + float(roots[index])*rayDirection;
+		glm::vec3 bottomCenterToPoint = cylinderPoint - m_bottomCenter;
+		glm::vec3 topCenterToPoint = cylinderPoint - m_topCenter;
 
-		float descriminant = b*b - 4*a*c;
-		if(descriminant < 0.0f)
-			return i;
-
-		descriminant = sqrtf(descriminant);
-		double denominator = (2.0f*a);
-		double numerator = -1.0f*b - descriminant;
-		double possibleRoot = numerator/denominator;
-
-		//Check if t1 is a valid root
-		if(possibleRoot >= 0.0f)
-		{
-			glm::vec3 cylinderPoint = rayOrigin + float(possibleRoot)*rayDirection;
-			glm::vec3 bottomCenterToPoint = cylinderPoint - m_bottomCenter;
-			glm::vec3 topCenterToPoint = cylinderPoint - m_topCenter;
-			if(glm::dot(m_upAxis, bottomCenterToPoint) > 0.0f && glm::dot(m_upAxis, topCenterToPoint) < 0.0f)
-				t = possibleRoot;
-		}
-
-		//Check if t2 is a valid root
-		numerator = -1.0f*b + descriminant;
-		possibleRoot = numerator/denominator;
-		if(possibleRoot >= 0.0f)
-		{
-			glm::vec3 cylinderPoint = rayOrigin + float(possibleRoot)*rayDirection;
-			glm::vec3 bottomCenterToPoint = cylinderPoint - m_bottomCenter;
-			glm::vec3 topCenterToPoint = cylinderPoint - m_topCenter;
-			if(glm::dot(m_upAxis, bottomCenterToPoint) > 0.0f && glm::dot(m_upAxis, topCenterToPoint) < 0.0f)
-				if(t < 0.0f || t > possibleRoot)
-					t = possibleRoot;			
-		}
+		if(glm::dot(m_upAxis, bottomCenterToPoint) > 0.0f && glm::dot(m_upAxis, topCenterToPoint) < 0.0f)
+			if(t < 0.0f || t > roots[index])
+				t = roots[index];
 	}
-
-	
 
 	double upAxisDotDirection = glm::dot(m_upAxis, rayDirection);
 	
-	if(fabs(upAxisDotDirection) < minValue && t > 0.0f)
-		i.hit = true;
-	else if(fabs(upAxisDotDirection) < minValue)
+	if(fabs(upAxisDotDirection) < minValue)
 		return i;
 	
-
 	//check t3 is valid root
 	double upAxisDotOrigin = glm::dot(m_upAxis, rayOrigin);
 	double bottomToOriginDotUpAxis = glm::dot(bottomToOrigin, m_upAxis);
 	double possibleRoot = -1.0f*bottomToOriginDotUpAxis/upAxisDotDirection;
-	if(i.hit == false && possibleRoot > 0.0f)
+	if(possibleRoot > 0.0f)
 	{
 		glm::vec3 cylinderPoint = rayOrigin + float(possibleRoot)*rayDirection;
 		glm::vec3 bottomCenterToPoint = cylinderPoint - m_bottomCenter;
@@ -247,7 +220,7 @@ Intersection Cylinder::checkIntersection(Ray r, bool skipBound)
 	//check if t4 is valid root
 	double topToOriginDotUpAxis = glm::dot(topToOrigin, -1.0f*m_upAxis);
 	possibleRoot = topToOriginDotUpAxis/upAxisDotDirection;
-	if(i.hit == false && possibleRoot > 0.0f)
+	if(possibleRoot > 0.0f)
 	{
 		glm::vec3 cylinderPoint = rayOrigin + float(possibleRoot)*rayDirection;
 		glm::vec3 topCenterToPoint = cylinderPoint - m_topCenter;
@@ -256,17 +229,16 @@ Intersection Cylinder::checkIntersection(Ray r, bool skipBound)
 				t = possibleRoot;	
 	}
 	
-	if(i.hit == true || t > 0.0f)
+	if(t > 0.0f)
 	{
 		//Finalize the intersection class
-		glm::vec3 cylinderPoint = rayOrigin + float(t+1e-7)*rayDirection;
+		glm::vec3 cylinderPoint = rayOrigin + float(t)*rayDirection;
 
 		i.hit = true;
 		i.point = glm::vec4(cylinderPoint, 1.0f);
 		i.distance = t;
 
 		//Calculate normal
-		//i.normal = glm::vec4(glm::normalize(p-q), 0.0f);
 		double squaredR = m_radius*m_radius;
 		glm::vec3 topCenterToPoint = cylinderPoint - m_topCenter;
 		if(glm::dot(topCenterToPoint, m_upAxis) < minValue && glm::dot(topCenterToPoint,topCenterToPoint) < squaredR)
@@ -284,7 +256,7 @@ Intersection Cylinder::checkIntersection(Ray r, bool skipBound)
 
 		//hit the sides
 		glm::vec3 pPrime = glm::vec3(m_topCenter.x, cylinderPoint.y,m_topCenter.z);
-		glm::vec3 normal = cylinderPoint - pPrime; //cylinderPoint - m_upAxis*glm::dot(m_upAxis, bottomCenterToPoint) - m_bottomCenter;
+		glm::vec3 normal = cylinderPoint - pPrime;
 		i.normal = glm::vec4(normal, 0.0f);
 	}
 
@@ -302,7 +274,6 @@ Intersection Torus::checkIntersection(Ray r, bool skipBound)
 	glm::vec3 d = glm::vec3(r.rayPosition.x, r.rayPosition.y, r.rayPosition.z);
 	glm::vec3 e = glm::vec3(r.rayDirection.x, r.rayDirection.y, r.rayDirection.z);
 
-	// G = 4*A^2*(D.x^2+D.y^2)}
 	double G = 4*Asquared*(e.x*e.x + e.y*e.y);
 	double H = 8*Asquared*(d.x*e.x + d.y*e.y);
 	double I = 4*Asquared*(d.x*d.x + d.y*d.y);
@@ -315,29 +286,6 @@ Intersection Torus::checkIntersection(Ray r, bool skipBound)
 	double C = 2*J*L+K*K-G;
 	double D = 2*K*L-H;
 	double E = L*L-I;
-
-
-	static double largest_value = -1.0f;
-	/*
-	if(A > largest_value)
-	{
-		largest_value = A;
-		std::cout << largest_value <<
-	}
-		
-	B /= A;
-	C /= A;
-	D /= A;
-	E /= A;
-	*/
-	if(oncer)
-	{
-		std::cout << A << std::endl;
-		std::cout << B << std::endl;
-		std::cout << C << std::endl;
-		std::cout << D << std::endl;
-		oncer = true;	
-	}
 	
 	double roots[4];
 	int numRoots = quarticRoots(B, C, D, E, roots);
@@ -349,17 +297,11 @@ Intersection Torus::checkIntersection(Ray r, bool skipBound)
 	for(int x=0; x<numRoots; x++)
 		if(t > roots[x])
 			t = roots[x];
-
-	//std::cout << roots[x] << std::endl;
 	
-	
-	if(t == 1000000.0f)
-		return i;
-
 	//Calculate the normal
 	glm::vec3 p = d + float(t+1e-7)*e;
 	glm::vec3 pPrime = d + float(t+1e-7)*e;
-	pPrime.z = m_pos.y; //m_pos.z;
+	pPrime.z = m_pos.y;
 	glm::vec3 q = float(m_radius/glm::length(pPrime))*pPrime;
 
 	i.hit = true;
@@ -415,7 +357,6 @@ Intersection Cone::checkIntersection(Ray r, bool skipBound)
 			t = roots[i];
 	}
 
-	//std::cout << m_radius << std::endl;
 	//no solution found
 	if(numRoots == 0)
 		return i;
@@ -433,31 +374,27 @@ Intersection Cone::checkIntersection(Ray r, bool skipBound)
 
 	if(t > 0.0)
 	{
-		std::cout << "HIT!" << std::endl;
 		i.hit = true;
 		glm::vec3 point = rayOrigin+rayDirection*float(t);
 		i.point = glm::vec4(point, 1.0f);
 		
 		glm::vec3 normal;
-		if(abs(glm::dot(-1.0f*m_Axis, point - m_botCenter)) < 1e-4)
-			normal = -1.0f*m_Axis;
+		glm::vec3 botCenterToPoint = point - m_botCenter;
+		//is it lying on the bottom
+		if(abs(glm::dot(downVector, botCenterToPoint)) < 0.000001f && glm::dot(botCenterToPoint, botCenterToPoint) < m_radius*m_radius)
+			normal = downVector;
 		else
 		{
-			glm::vec3 topCenter = m_botCenter+float(m_height)*m_Axis;
-			glm::vec3 perpendicular = glm::cross(-1.0f*m_Axis, point - topCenter);
-			normal = glm::cross(point - topCenter, perpendicular); 
+			//It's lygin on the side
+			normal = point - (downVector*glm::dot(botCenterToPoint, downVector) + m_botCenter);
+			float ratio = -1.0f*m_radius/m_height;
+			normal = normal + downVector*(ratio*glm::length(normal)); 
 		}
-
 		i.normal =glm::vec4(normal, 0.0f);
 		i.distance = t;
 	}
 
 	return i;
-}
-
-glm::vec4 Cone::calculateNormal(glm::vec3 direction, glm::vec3 origen, glm::vec3 intersection)
-{
-	return glm::vec4(0.0f);
 }
 
 //Hierarchical constructors

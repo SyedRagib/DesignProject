@@ -2,7 +2,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
-//http://mrl.nyu.edu/~perlin/noise/
+
+/*
+  This code was the c++ interpretation of Ken Perlin's Improved Perlin Noise that was written by 
+  Ken Perlin in Java originally.
+  http://mrl.nyu.edu/~perlin/noise/
+*/
+
 ImprovedPerlinNoise::ImprovedPerlinNoise()
 {
    int permutation[] = { 151,160,137,91,90,15,
@@ -45,29 +51,29 @@ double ImprovedPerlinNoise::grad(int hash, double x, double y, double z) {
 
 double ImprovedPerlinNoise::noise(double x, double y, double z) {
 	
-   int X = (int)floor(x) & 255, // FIND UNIT CUBE THAT
-       Y = (int)floor(y) & 255, // CONTAINS POINT.
+   int X = (int)floor(x) & 255, 
+       Y = (int)floor(y) & 255,
        Z = (int)floor(z) & 255;
-   x -= floor(x);                   // FIND RELATIVE X,Y,Z
-   y -= floor(y);                   // OF POINT IN CUBE.
+   x -= floor(x);
+   y -= floor(y);
    z -= floor(z);
-   double u = fade(x),              // COMPUTE FADE CURVES
-          v = fade(y),              // FOR EACH OF X,Y,Z.
+   double u = fade(x),
+          v = fade(y),
           w = fade(z);
-   int A = p[X]+Y,    // HASH COORDINATES OF
-       AA = p[A]+Z,   // THE 8 CUBE CORNERS,
+   int A = p[X]+Y,
+       AA = p[A]+Z,
        AB = p[A+1]+Z,
        B = p[X+1]+Y,
        BA = p[B]+Z,
        BB = p[B+1]+Z;
 
-  
-  return lerp(w, lerp(v, lerp(u, grad(p[AA], x, y, z),       // AND ADD
-                           grad(p[BA], x-1, y, z)),    // BLENDED
-                   lerp(u, grad(p[AB], x, y-1, z),     // RESULTS
-                           grad(p[BB], x-1, y-1, z))), // FROM 8
-           lerp(v, lerp(u, grad(p[AA+1], x, y, z-1),   // CORNERS
-                           grad(p[BA+1], x-1, y, z-1)),// OF CUBE
+  //Interpolate over the lattice's neighbours
+  return lerp(w, lerp(v, lerp(u, grad(p[AA], x, y, z),
+                           grad(p[BA], x-1, y, z)),
+                   lerp(u, grad(p[AB], x, y-1, z),
+                           grad(p[BB], x-1, y-1, z))),
+           lerp(v, lerp(u, grad(p[AA+1], x, y, z-1), 
+                           grad(p[BA+1], x-1, y, z-1)),
                    lerp(u, grad(p[AB+1], x, y-1, z-1 ),
                            grad(p[BB+1], x-1, y-1, z-1 ))));
                            
@@ -75,35 +81,33 @@ double ImprovedPerlinNoise::noise(double x, double y, double z) {
 
 double ImprovedPerlinNoise::perlin(double x, double y, double z) {
 
-    int xi = (int)x & 255;                // Calculate the "unit cube" that the point asked will be located in
-    int yi = (int)y & 255;                // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
-    int zi = (int)z & 255;                // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
-    double xf = x-(int)x;               // We also fade the location to smooth the result.
+    int xi = (int)x & 255;                
+    int yi = (int)y & 255;                
+    int zi = (int)z & 255;              
+    double xf = x-(int)x;               
     double yf = y-(int)y;
     double zf = z-(int)z;
     double u = fade(xf);
     double v = fade(yf);
     double w = fade(zf);
     
-    int a  = p[xi]  +yi;                // This here is Perlin's hash function.  We take our x value (remember,
-    int aa = p[a]   +zi;                // between 0 and 255) and get a random value (from our p[] array above) between
-    int ab = p[a+1] +zi;                // 0 and 255.  We then add y to it and plug that into p[], and add z to that.
-    int b  = p[xi+1]+yi;                // Then, we get another random value by adding 1 to that and putting it into p[]
-    int ba = p[b]   +zi;                // and add z to it.  We do the whole thing over again starting with x+1.  Later
-    int bb = p[b+1] +zi;                // we plug aa, ab, ba, and bb back into p[] along with their +1's to get another set.
-                              // in the end we have 8 values between 0 and 255 - one for each vertex on the unit cube.
-                              // These are all interpolated together using u, v, and w below.
+    int a  = p[xi]  +yi;                
+    int aa = p[a]   +zi;                
+    int ab = p[a+1] +zi;               
+    int b  = p[xi+1]+yi;                
+    int ba = p[b]   +zi;                
+    int bb = p[b+1] +zi; 
     
     double x1, x2, y1, y2;
-    x1 = lerp(  grad (p[aa  ], xf  , yf  , zf),     // This is where the "magic" happens.  We calculate a new set of p[] values and use that to get
-          grad (p[ba  ], xf-1, yf  , zf),     // our final gradient values.  Then, we interpolate between those gradients with the u value to get
-          u);                   // 4 x-values.  Next, we interpolate between the 4 x-values with v to get 2 y-values.  Finally,
-    x2 = lerp(  grad (p[ab  ], xf  , yf-1, zf),     // we interpolate between the y-values to get a z-value.
+    x1 = lerp(  grad (p[aa  ], xf  , yf  , zf),     
+          grad (p[ba  ], xf-1, yf  , zf),
+          u);                   
+    x2 = lerp(  grad (p[ab  ], xf  , yf-1, zf),    
           grad (p[bb  ], xf-1, yf-1, zf),
-          u);                   // When calculating the p[] values, remember that above, p[a+1] expands to p[xi]+yi+1 -- so you are
-    y1 = lerp(x1, x2, v);               // essentially adding 1 to yi.  Likewise, p[ab+1] expands to p[p[xi]+yi+1]+zi+1] -- so you are adding
-                              // to zi.  The other 3 parameters are your possible return values (see grad()), which are actually
-    x1 = lerp(  grad (p[aa+1], xf  , yf  , zf-1),   // the vectors from the edges of the unit cube to the point in the unit cube itself.
+          u);                  
+    y1 = lerp(x1, x2, v);             
+                       
+    x1 = lerp(  grad (p[aa+1], xf  , yf  , zf-1),   
           grad (p[ba+1], xf-1, yf  , zf-1),
           u);
     x2 = lerp(  grad (p[ab+1], xf  , yf-1, zf-1),
@@ -111,22 +115,5 @@ double ImprovedPerlinNoise::perlin(double x, double y, double z) {
                 u);
     y2 = lerp (x1, x2, v);
     
-    return (lerp (y1, y2, w)+1)/2;            // For convenience we bound it to 0 - 1 (theoretical min/max before is -1 - 1)
+    return (lerp (y1, y2, w)+1)/2;
   }
-
-double ImprovedPerlinNoise::octavePerlin(double x, double y, double z, int octaves, double persistence) {
-    double total = 0;
-    double frequency = 1;
-    double amplitude = 1;
-    double maxValue = 0;  // Used for normalizing result to 0.0 - 1.0
-    for(int i=0;i<octaves;i++) {
-        total += perlin(x * frequency, y * frequency, z * frequency) * amplitude;
-        
-        maxValue += amplitude;
-        
-        amplitude *= persistence;
-        frequency *= 2;
-    }
-    
-    return total/maxValue;
-}

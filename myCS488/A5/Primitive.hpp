@@ -85,9 +85,11 @@ private:
 
 class Cylinder : public Primitive {
 public:
-  Cylinder(const glm::vec3& pos, const glm::vec3& topCenter, const glm::vec3& bottomCenter, double radius)
-    : m_pos(pos), m_topCenter(topCenter), m_bottomCenter(bottomCenter), m_radius(radius), m_upAxis(glm::normalize(topCenter-bottomCenter)), m_height(glm::distance(topCenter, bottomCenter))
+  Cylinder(const glm::vec3& bottomCenter, double height, double radius)
+    :m_bottomCenter(bottomCenter), m_height(height), m_radius(radius)
   {
+    m_topCenter = glm::vec3(bottomCenter.x,bottomCenter.y+float(m_height), bottomCenter.z);
+    m_upAxis = glm::normalize(m_topCenter-m_bottomCenter);
   }
 
   virtual ~Cylinder();
@@ -104,14 +106,8 @@ public:
 class Cone : public Primitive
 {
 public:
-/*
-  Cone(const glm::vec3& bot, const glm::vec3&top, double radius)
-    : m_pos(bot), m_topCenter(top), m_radius(radius), m_Axis(glm::normalize(bot-top))
-    {
-    }
-*/
   Cone(const glm::vec3& bot, const glm::vec3& upAxis, double alpha, double height)
-    : m_botCenter(bot), m_Axis(glm::normalize(upAxis)), m_height(height), m_radius(tan(alpha*3.14159/180.0))
+    : m_botCenter(bot), m_Axis(glm::normalize(upAxis)), m_alpha(alpha), m_height(height), m_radius(tan(alpha))
     {
     }
 
@@ -119,9 +115,6 @@ public:
     virtual Intersection checkIntersection(Ray r, bool skipBound);
 
 private:
-  glm::vec4 calculateNormal(glm::vec3 direction, glm::vec3 origen, glm::vec3 intersection);
-
-  glm::vec3 m_pos;
   glm::vec3 m_topCenter;
   glm::vec3 m_botCenter;
   double m_radius;

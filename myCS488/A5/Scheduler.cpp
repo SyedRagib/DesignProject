@@ -7,12 +7,6 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 {
-	/*
-	for(int i=0; i<width; i++)
-		delete[] rayCasted[i];
-	
-	delete[] rayCasted;
-	*/
 }
 
 void Scheduler::setup(int w, int h)
@@ -24,20 +18,6 @@ void Scheduler::setup(int w, int h)
 
 	for(int i=0; i<width; i++)
 			rayCastedImage(i,0,0) = -2.0f;
-
-	/*
-	bool** tempBlob = new bool*[w];
-	for(int i=0; i<w; i++)
-	{
-		tempBlob[i] = new bool[h];
-	}
-
-	rayCasted = tempBlob;
-
-	for(int i=0; i<w; i++)
-		for(int j=0; j<h; j++)
-			rayCasted[i][j] = false;
-	*/
 }
 
 
@@ -54,7 +34,6 @@ glm::vec2 Scheduler::getNextScheduleHelper()
 			if(rayCastedImage(i,0,0) < -1.0f)
 			{
 				rayCastedImage(i, 0, 0) = 0.0f;
-				//std::cout << "current ray tracing " << i << " , " << j << std::endl;
 				return glm::vec2(i, 0);
 			}
 

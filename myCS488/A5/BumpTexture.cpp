@@ -12,17 +12,18 @@ BumpTexture::~BumpTexture()
 
 glm::vec3 BumpTexture::getNormal(glm::vec3 p, glm::vec3 n)
 {
-   
+   //Return normal
    if(m_bumpScale <= 0.0)
    		return n;
    else
    {
-   	  double x=p.x/m_bumpScale;
-      double y=p.y/m_bumpScale;
-      double z=p.z/m_bumpScale;
-
-      glm::vec3 newNormal = glm::vec3(float(imp.noise(x,y,z)), float(imp.noise(y,z,x)), float(imp.noise(z,x,y)));
-      newNormal = n + newNormal*float(m_bumpBy);
-      return glm::normalize(newNormal);
+      //Calculate the bumped normal
+      p = float(1/m_bumpScale)*p;
+      glm::vec3 bumppedNormal = float(m_bumpBy)*
+                            glm::vec3(float(imp.noise(p.x,p.y,p.z)), 
+                                      float(imp.noise(p.y,p.z,p.x)), 
+                                      float(imp.noise(p.z,p.x,p.y)))+
+                            n;
+      return glm::normalize(bumppedNormal);
    }
 }
